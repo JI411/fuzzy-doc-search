@@ -1,0 +1,15 @@
+fitz
+nltk
+numpy
+opencv-python
+openpyxl
+pandas
+pathlib
+pdf2image
+Pillow
+PyMuPDF
+pytesseract
+PyYAML
+rapidfuzz
+regex
+tesseract-ocr

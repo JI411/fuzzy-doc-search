@@ -1,0 +1,8 @@
+recognize: True
+dpi: 600
+lang: ru
+preprocess_image: True
+search: True
+conf_threshold_percent: 80
+fast search in pdf: False
+word_order: True
