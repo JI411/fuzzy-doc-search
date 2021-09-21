@@ -7,7 +7,7 @@ from pathlib import Path
 from multiprocessing import Pool
 
 from math import ceil, floor
-from typing import List, Callable, Union, Generator
+from typing import List, Callable, Union, Generator, Dict
 import datetime
 
 import regex as re
@@ -38,11 +38,13 @@ def dummy_preprocess(text: str) -> str:
     # text = re.sub(r"[^A-Za-z0-9()\s,]", " ", text)
     return text
 
+
 class FuzzySearcher:
     """
     TODO: test
     Basic class for a search in docs
     """
+
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, ratio: Callable[[str, str], float], partial_ratio: Callable[[str, str], float],
@@ -116,7 +118,7 @@ class FuzzySearcher:
             dataframe: pd.DataFrame = dataframe.fillna('').astype(str)
             for i, keyword in enumerate(self.keywords):
                 save_if_match: Callable[[str], str] = lambda x, k=keyword: \
-                    x if self.ratio(k,  self.preprocess(x)) > self.conf_t else ''
+                    x if self.ratio(k, self.preprocess(x)) > self.conf_t else ''
                 # sub_df: pd.DataFrame = dataframe.swifter.progress_bar(False).allow_dask_on_strings(True)
                 # sub_df = sub_df.applymap(save_if_match)
                 sub_df: pd.DataFrame = dataframe.applymap(save_if_match)
@@ -129,7 +131,7 @@ class FuzzySearcher:
                                        'context': sub_df})
                 sub_df['sheet name'] = sheet_name
                 sub_df['document name'] = xlsx_path.name
-                sub_df = sub_df[['keyword original', 'keyword',  'document name', 'sheet name', 'string #', 'context']]
+                sub_df = sub_df[['keyword original', 'keyword', 'document name', 'sheet name', 'string #', 'context']]
                 result_from_one_xlsx.append(sub_df)
         if result_from_one_xlsx:
             self.log(f'Done xlsx search: {xlsx_path.name}')
@@ -143,9 +145,11 @@ class FuzzySearcher:
         :param pdf_path: path to searchable pdf file
         :return: dataframe with columns: keyword original, keyword,  document name, page number, context
         """
-        result_from_one_pdf = []
+        result_from_one_pdf: List[Dict] = []
+        page_and_text: Dict = {}  # TODO: text[start:end]
         with fitz.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf):
+                page_and_text[page_num] = text  # TODO: text[start:end]
                 text = page.getText('text')
                 if not text:
                     continue
@@ -154,17 +158,25 @@ class FuzzySearcher:
                 # print(text)
                 len_text = len(text)
                 for len_chunk in range(self.min_len_matched_text, self.max_len_matched_text + 1):
-                    for chunk in (text[i:i+len_chunk] for i in range(0, len_text, len_chunk)):
+                    # for chunk in (text[i:i+len_chunk] for i in range(0, len_text, len_chunk)):
+                    for start, end in ((i, i + len_chunk) for i in range(0, len_text, len_chunk)):
+                        chunk = text[start: end]
                         for i, keyword in enumerate(self.keywords):
                             if self.ratio(keyword, chunk) > self.conf_t:
                                 result_from_one_pdf.append({'keyword original': self.keywords_original[i],
                                                             'keyword': keyword + ' ',
                                                             'document name': pdf_path.name,
                                                             'page number': page_num,
-                                                            'context': chunk})
+                                                            'context': chunk,
+                                                            'start': start,
+                                                            'end': end})
         if result_from_one_pdf:
             self.log(f'Done pdf search: {pdf_path.name}')
-            return pd.DataFrame(result_from_one_pdf).sort_values(by=['keyword original', 'page number', 'context'])
+            result_from_one_pdf: pd.DataFrame = pd.DataFrame(result_from_one_pdf) \
+                .sort_values(by=['keyword original', 'keyword', 'page number', 'start'])
+            #    .sort_values(by=['keyword original', 'keyword', 'page number', 'context'])
+
+            return result_from_one_pdf
         return None
 
     def search_in_pdf_fast(self, pdf_path: Path) -> Union[pd.DataFrame, None]:
