@@ -68,6 +68,10 @@ class FuzzySearcher:
         if not self.keywords:
             self.log("ValueError 'Empty keywords list after preprocessing'")
             raise ValueError('Empty keywords list after preprocessing')
+        elif len(self.keywords) != len(self.keywords_original):
+            self.log("ValueError 'Some keywords remove after preprocessing'")
+            self.log(f'keywords after preprocessing: {self.keywords}')
+            raise ValueError('Some keywords remove after preprocessing')
 
         if 0 < conf_threshold_percent < 100:
             self.conf_t: float = float(conf_threshold_percent)
