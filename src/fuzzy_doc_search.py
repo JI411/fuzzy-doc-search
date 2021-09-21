@@ -43,43 +43,45 @@ print(config)
 with open(log_path, 'a', encoding='utf-8') as file:
     print(config, file=file, flush=True)
 
-if config.get('recognize', False):
-    preprocess_image = config.get('preprocess_image', False)
-    recognizer: Recognizer = Recognizer(dpi=config.get('dpi', 300), log_path=log_path,
-                                        searchable_pdf_dir=searchable_pdf_dir,
-                                        lang=config.get('lang', 'ru'),
-                                        preprocess_config={'resize': preprocess_image,
-                                                           'adaptiveThreshold': preprocess_image,
-                                                           'bilateralFilter': preprocess_image})
-    with Pool(processes=4) as pool:
-        pool.map(recognizer.scanned2searchable, scanned_pdf_dir.glob('*.pdf'))
+if __name__ == '__main__':
 
-if config.get('search', False):
-    with open(inp_dir / 'keywords.txt', encoding='utf-8') as f:
-        keywords_not_preprocessed = [line.replace('\n', ' ') for line in f.readlines()]
-        keywords_not_preprocessed = list(filter(lambda x: x not in (' ', ''), keywords_not_preprocessed))
+    if config.get('recognize', False):
+        preprocess_image = config.get('preprocess_image', False)
+        recognizer: Recognizer = Recognizer(dpi=config.get('dpi', 300), log_path=log_path,
+                                            searchable_pdf_dir=searchable_pdf_dir,
+                                            lang=config.get('lang', 'ru'),
+                                            preprocess_config={'resize': preprocess_image,
+                                                               'adaptiveThreshold': preprocess_image,
+                                                               'bilateralFilter': preprocess_image})
+        with Pool(processes=4) as pool:
+            pool.map(recognizer.scanned2searchable, scanned_pdf_dir.glob('*.pdf'))
 
-    writer = pd.ExcelWriter(output_path)  # pylint: disable=abstract-class-instantiated
+    if config.get('search', False):
+        with open(inp_dir / 'keywords.txt', encoding='utf-8') as f:
+            keywords_not_preprocessed = [line.replace('\n', ' ') for line in f.readlines()]
+            keywords_not_preprocessed = list(filter(lambda x: x not in (' ', ''), keywords_not_preprocessed))
 
-    fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.ratio if config['word_order'] else fuzz.token_sort_ratio,
-                                         partial_ratio=fuzz.partial_ratio,
-                                         conf_threshold_percent=config.get('conf_threshold_percent', 80),
-                                         preprocess=dummy_preprocess,
-                                         keywords=keywords_not_preprocessed,
-                                         log_path=log_path)
-    with Pool(processes=4) as pool:
-        result_xlsx: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_xlsx,
-                                                                     xlsx_dir.glob('*.xlsx')))
-        result_xlsx.to_excel(writer, 'xlsx', index=False)
+        writer = pd.ExcelWriter(output_path)  # pylint: disable=abstract-class-instantiated
 
-        if config.get('fast search in pdf', False):
-            result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
-                                                                             searchable_pdf_dir.glob('*.pdf')))
-            result_pdf_fast.to_excel(writer, 'pdf_fast', index=False)
+        fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.ratio if config['word_order'] else fuzz.token_sort_ratio,
+                                             partial_ratio=fuzz.partial_ratio,
+                                             conf_threshold_percent=config.get('conf_threshold_percent', 80),
+                                             preprocess=dummy_preprocess,
+                                             keywords=keywords_not_preprocessed,
+                                             log_path=log_path)
+        with Pool(processes=4) as pool:
+            result_xlsx: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_xlsx,
+                                                                         xlsx_dir.glob('*.xlsx')))
+            result_xlsx.to_excel(writer, 'xlsx', index=False)
 
-        else:
-            result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
-                                                                        searchable_pdf_dir.glob('*.pdf')))
-            result_pdf.to_excel(writer, 'pdf', index=False)
+            if config.get('fast search in pdf', False):
+                result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
+                                                                                 searchable_pdf_dir.glob('*.pdf')))
+                result_pdf_fast.to_excel(writer, 'pdf_fast', index=False)
 
-    writer.save()
+            else:
+                result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
+                                                                            searchable_pdf_dir.glob('*.pdf')))
+                result_pdf.to_excel(writer, 'pdf', index=False)
+
+        writer.save()

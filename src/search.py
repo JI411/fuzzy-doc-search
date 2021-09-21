@@ -93,7 +93,7 @@ class FuzzySearcher:
         :return: one dataframe with all results or ValueError describe
         """
         try:
-            result: pd.DataFrame = pd.concat(g for g in gen if g is not None).reset_index(drop=True)
+            result: pd.DataFrame = pd.concat((g for g in gen if g is not None), ignore_index=True)
         except ValueError as error:
             result: pd.DataFrame = pd.DataFrame([f'ValueError: {error}', 'check path to directory'])
         return result
@@ -150,16 +150,15 @@ class FuzzySearcher:
         :return: dataframe with columns: keyword original, keyword,  document name, page number, context
         """
         result_from_one_pdf: List[Dict] = []
-        page_and_text: Dict = {}  # TODO: text[start:end]
+        # noinspection PyUnresolvedReferences
         with fitz.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf):
-                page_and_text[page_num] = text  # TODO: text[start:end]
+                # result_from_one_page: Dict[str, List[pd.Interval]] = {}  # key is keywords, values is position in text
                 text = page.getText('text')
                 if not text:
                     continue
 
                 text = self.preprocess(text)
-                # print(text)
                 len_text = len(text)
                 for len_chunk in range(self.min_len_matched_text, self.max_len_matched_text + 1):
                     # for chunk in (text[i:i+len_chunk] for i in range(0, len_text, len_chunk)):
@@ -168,7 +167,7 @@ class FuzzySearcher:
                         for i, keyword in enumerate(self.keywords):
                             if self.ratio(keyword, chunk) > self.conf_t:
                                 result_from_one_pdf.append({'keyword original': self.keywords_original[i],
-                                                            'keyword': keyword + ' ',
+                                                            'keyword': keyword,
                                                             'document name': pdf_path.name,
                                                             'page number': page_num,
                                                             'context': chunk,
@@ -192,6 +191,7 @@ class FuzzySearcher:
         :return: dataframe with columns: keyword original, keyword,  document name, page num
         """
         result_from_one_pdf = []
+        # noinspection PyUnresolvedReferences
         with fitz.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf):
                 text = page.getText('text')
@@ -210,29 +210,6 @@ class FuzzySearcher:
             return pd.DataFrame(result_from_one_pdf).sort_values(by=['keyword original',
                                                                      'page number']).drop_duplicates()
         return None
-
-    # def search_in_docx(self, docx_path: Path) -> Union[pd.DataFrame, None]:
-    #     """
-    #     Extract text from docx as string and use self.partial_ratio to find keywords in file
-    #     :param docx_path:
-    #     :return:
-    #     """
-    #     text = docx2txt.process(docx_path)
-    #     result_from_one_docx = []
-    #     if not text:
-    #         return None
-    #
-    #     text = self.preprocess(text)
-    #     len_text = len(text)
-    #     for i, keyword in enumerate(self.keywords):
-    #         if self.partial_ratio(keyword, text) > self.conf_t:
-    #             find_context = text.find(keyword)
-    #             context_start = max(0, find_context - 20)
-    #             context_end = min(len_text, find_context + len(keyword) + 20)
-    #             result_from_one_docx.append({'keyword original': self.keywords_original[i],
-    #                                         'keyword': keyword + ' ',
-    #                                          'document name': docx_path.name,
-    #                                          'context': text[context_start:context_end]})
 
 
 if __name__ == '__main__':
