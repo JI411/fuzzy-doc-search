@@ -41,7 +41,6 @@ def dummy_preprocess(text: str) -> str:
 
 class FuzzySearcher:
     """
-    TODO: test
     Basic class for a search in docs
     """
 
@@ -108,7 +107,6 @@ class FuzzySearcher:
 
     def search_in_xlsx(self, xlsx_path: Path) -> Union[pd.DataFrame, None]:
         """
-        TODO: solve empty context promlem
         Use self.ratio to find keywords in file
 
         :param xlsx_path: path to xlsx file

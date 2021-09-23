@@ -1,4 +1,4 @@
-recognize: True
+recognize: False
 dpi: 600
 lang: ru
 preprocess_image: True
