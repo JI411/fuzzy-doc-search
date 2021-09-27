@@ -5,6 +5,7 @@ Start script from user config from inp_path
 
 from pathlib import Path
 from multiprocessing import Pool
+from typing import Dict, Union, List
 from os import system
 import datetime
 import yaml
@@ -20,21 +21,20 @@ from recognize import Recognizer
 system("export TESSDATA_PREFIX='/usr/share/tesseract-ocr/4.00/tessdata'")
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
-project_dir = Path.cwd().parent
-inp_dir = project_dir / 'inp'
-xlsx_dir = inp_dir / 'xlsx'
-scanned_pdf_dir = inp_dir / 'scanned_pdf'
-searchable_pdf_dir = inp_dir / 'searchable pdf'
-out_dir = project_dir / 'out' / str(datetime.datetime.now())
-log_path = out_dir / 'log.txt'
-output_path = out_dir / 'output.xlsx'
+project_dir: Path = Path.cwd().parent
+inp_dir: Path = project_dir / 'inp'
+xlsx_dir: Path = inp_dir / 'xlsx'
+scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
+searchable_pdf_dir: Path = inp_dir / 'searchable pdf'
+out_dir: Path = project_dir / 'out' / str(datetime.datetime.now())
+log_path: Path = out_dir / 'log.txt'
+output_path: Path = out_dir / 'output.xlsx'
 
 
 out_dir.mkdir(parents=True, exist_ok=True)
 
 with open(inp_dir / "config.yaml", "r", encoding='utf-8') as f:
-    config = yaml.safe_load(f)
-
+    config: Dict[str, Union[bool, int]] = yaml.safe_load(f)
 with open(out_dir / "config.yaml", "w", encoding='utf-8') as f:
     yaml.dump(config, f)
 
@@ -45,7 +45,7 @@ with open(log_path, 'a', encoding='utf-8') as file:
 if __name__ == '__main__':
 
     if config.get('recognize', False):
-        preprocess_image = config.get('preprocess_image', False)
+        preprocess_image: bool = config.get('preprocess_image', False)
         recognizer: Recognizer = Recognizer(dpi=config.get('dpi', 300), log_path=log_path,
                                             searchable_pdf_dir=searchable_pdf_dir,
                                             lang=config.get('lang', 'ru'),
@@ -57,10 +57,10 @@ if __name__ == '__main__':
 
     if config.get('search', False):
         with open(inp_dir / 'keywords.txt', encoding='utf-8') as f:
-            keywords_not_preprocessed = [line.replace('\n', ' ') for line in f.readlines()]
+            keywords_not_preprocessed: List[str] = [line.replace('\n', ' ') for line in f.readlines()]
             keywords_not_preprocessed = list(filter(lambda x: x not in (' ', ''), keywords_not_preprocessed))
 
-        writer = pd.ExcelWriter(output_path)  # pylint: disable=abstract-class-instantiated
+        writer: pd.ExcelWriter = pd.ExcelWriter(output_path)  # pylint: disable=abstract-class-instantiated
 
         fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.ratio if config['word_order'] else fuzz.token_sort_ratio,
                                              partial_ratio=fuzz.partial_ratio,
