@@ -1,8 +1,8 @@
-recognize: True
-dpi: 600
-lang: ru
-preprocess_image: True
-search: True
-conf_threshold_percent: 80
-fast search in pdf: False
-word_order: True
+recognize: True                 # делать ли распознавание
+dpi: 600                        # при распознавании: четкость картинки, рекомендуется 300-600
+lang: ru                        # при распознавании: язык для распознавания тессерактом
+preprocess_image: True          # при распознавании: пытаться ли улучшить качество распознавания с помощь. преобразований картинки (ресайз и бинаризация)
+search: True                    # делать ли поиск
+conf_threshold_percent: 80      # порог уверенности, при котором фраза считается найденной, значения от 0 до 100
+fast_search_in_pdf: False       # использовать ли быстрый поиск по pdf, не выдаёт контекст
+word_order: True                # учитывать ли порядок слов при поиске

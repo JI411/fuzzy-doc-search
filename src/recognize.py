@@ -1,5 +1,5 @@
 """
-Class for OCR scanned pdf
+Class for OCR scanned_pdf
 """
 # pylint: disable=line-too-long
 
@@ -20,7 +20,7 @@ import pdf2image
 
 class Recognizer:
     """
-    Basic class to OCR scanned pdf
+    Basic class to OCR scanned_pdf
     """
 
     def __init__(self, dpi: int, log_path: Path, searchable_pdf_dir: Path, preprocess_config: Dict, lang: str) -> None:
@@ -85,7 +85,7 @@ class Recognizer:
 
     def scanned2searchable(self, pdf_path: Path) -> None:
         """
-        Use pdf2image and tesseract to convert scanned pdf to searchable
+        Use pdf2image and tesseract to convert scanned_pdf to searchable
         :param pdf_path: path to one pdf file
         :return: None, pdf save to searchable pdf dir
         """
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
     project_dir = Path.cwd().parent
-    scanned_pdf_dir = project_dir / 'inp' / 'scanned pdf'
+    scanned_pdf_dir = project_dir / 'inp' / 'scanned_pdf'
 
     recognizer = Recognizer(dpi=600, log_path=project_dir / 'log.txt', lang='ru',
                             searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',
