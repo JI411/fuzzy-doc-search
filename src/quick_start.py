@@ -64,7 +64,8 @@ recognizer: Recognizer = Recognizer(dpi=600,
                                     # язык из доступных для тессеракта
                                     searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',
                                     # путь до папки с текстовыми pdf
-                                    preprocess_config={'resize': False, 'adaptiveThreshold': False,
+                                    preprocess_config={'resize': False,
+                                                       'adaptiveThreshold': False,
                                                        'bilateralFilter': False})
                                     # какие преобразования над изображениями из Recognizer.image_preprocess применять
 
