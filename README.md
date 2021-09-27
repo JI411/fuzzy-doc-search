@@ -1,14 +1,10 @@
 # fuzzy-doc-search: Проект для распознавания (OCR) pdf документов, поиска ключевых фраз в xlsx и текстовых pdf.
 
-Для решения задачи OCR используется класс Recognizer (из recognize.py). Для поиске - FuzzySearcher (из search.py).
-Для запуска из конфига используетс файл fuzzy_doc_search.py, конфиг лежит в папке inp_path, в example_config.yaml есть пояснения к каждому параметру в конфиге.
+Для OCR используется класс Recognizer (из recognize.py). Для поиска - FuzzySearcher (из search.py).
+Запуска из конфига идёт через fuzzy_doc_search.py, конфиг лежит в папке inp, в example_config.yaml есть пояснения к каждому параметру в конфиге.
 
-Для использования OCR необходимо указать путь до тессеракта в 20-21 строчках fuzzy_doc_search.py. Для удобного встраивания в другие модули все методы снабжены описаниями.
+При использовании OCR необходимо указать путь до тессеракта в fuzzy_doc_search.py, пример в коде ниже. Кроме установки библиотек из requirements.txt может потребоваться догрузить языки для тессеракта, сейчас препроцессинг и тессеракт рассчитаны на русский.
 
-Что можно спокойно менять:
-- Другая система для OCR
-- Функция препроцессинга для текста и ключевых фраз (передаётся в FuzzySearcher)
-- Запуск не из конфига, а как удобно
 ____
 
 Использование (весь код есть в src/quick_start.py):
@@ -31,9 +27,11 @@ from search import FuzzySearcher, dummy_preprocess
 from recognize import Recognizer
 
 
-# указываем пути
+# для тессеракта
 system("export TESSDATA_PREFIX='/usr/share/tesseract-ocr/4.00/tessdata'")
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+
+# указываем пути
 project_dir = Path.cwd().parent
 inp_dir = project_dir / 'inp'
 xlsx_dir = inp_dir / 'xlsx'
@@ -80,4 +78,9 @@ with Pool(processes=4) as pool:
                                                                      searchable_pdf_dir.glob('*.pdf')))
                                                                      
 ```
+____
 
+Что можно спокойно менять:
+- Другая система для OCR
+- Функция препроцессинга для текста и ключевых фраз (передаётся в FuzzySearcher)
+- Запуск не из конфига, а как удобно
