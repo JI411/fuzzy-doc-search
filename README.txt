@@ -40,7 +40,6 @@ out_dir = project_dir / 'out' / str(datetime.datetime.now())
 log_path = out_dir / 'log.txt'
 output_path = out_dir / 'output.xlsx'
 
-
 # define FuzzySearcher and Recognizer
 fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.token_sort_ratio,        # функция, определяющая близость фраз с значениями в (0, 100)
                                      partial_ratio=fuzz.partial_ratio,   # как ratio, но для функции search_in_pdf_fast
