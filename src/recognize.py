@@ -20,7 +20,6 @@ import pdf2image
 
 class Recognizer:
     """
-    TODO: test
     Basic class to OCR scanned pdf
     """
 

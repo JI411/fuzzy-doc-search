@@ -13,13 +13,7 @@ import datetime
 import regex as re
 import pandas as pd
 import fitz
-# import docx2txt
-
 from rapidfuzz import fuzz
-
-
-# import swifter
-# print(swifter.__version__)
 
 
 def dummy_ratio(first_text: str, second_text: str) -> float:
@@ -41,7 +35,6 @@ def dummy_preprocess(text: str) -> str:
 
 class FuzzySearcher:
     """
-    TODO: test
     Basic class for a search in docs
     """
 
@@ -108,7 +101,6 @@ class FuzzySearcher:
 
     def search_in_xlsx(self, xlsx_path: Path) -> Union[pd.DataFrame, None]:
         """
-        TODO: use swifter xor pool.map
         Use self.ratio to find keywords in file
 
         :param xlsx_path: path to xlsx file
@@ -153,33 +145,47 @@ class FuzzySearcher:
         # noinspection PyUnresolvedReferences
         with fitz.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf):
-                # result_from_one_page: Dict[str, List[pd.Interval]] = {}  # key is keywords, values is position in text
-                text = page.getText('text')
+                result_from_one_page: Dict[str, List[pd.Interval]] = {}
+                # keys == keywords, values == keys position in text
+
+                text: str = page.getText('text')
                 if not text:
                     continue
 
                 text = self.preprocess(text)
                 len_text = len(text)
                 for len_chunk in range(self.min_len_matched_text, self.max_len_matched_text + 1):
-                    # for chunk in (text[i:i+len_chunk] for i in range(0, len_text, len_chunk)):
                     for start, end in ((i, i + len_chunk) for i in range(0, len_text, len_chunk)):
                         chunk = text[start: end]
-                        for i, keyword in enumerate(self.keywords):
+                        for keyword in self.keywords:
                             if self.ratio(keyword, chunk) > self.conf_t:
-                                result_from_one_pdf.append({'keyword original': self.keywords_original[i],
-                                                            'keyword': keyword,
-                                                            'document name': pdf_path.name,
-                                                            'page number': page_num,
-                                                            'context': chunk,
-                                                            'start': start,
-                                                            'end': end})
+
+                                new_interval = pd.Interval(left=start, right=end)  # closed='both'
+                                if keyword not in result_from_one_page.keys():
+                                    result_from_one_page[keyword] = [new_interval]
+                                else:
+                                    add_new_interval = True
+                                    for i, interval in enumerate(result_from_one_page[keyword]):
+                                        if interval.overlaps(new_interval):
+                                            result_from_one_page[keyword][i] = pd.Interval(
+                                                min(interval.left, new_interval.left),
+                                                max(interval.right, new_interval.right))
+                                            add_new_interval = False
+                                    if add_new_interval:
+                                        result_from_one_page[keyword].append(new_interval)
+
+                for keyword_original, keyword in zip(self.keywords_original, self.keywords):
+                    if keyword in result_from_one_page.keys():
+                        for interval in result_from_one_page[keyword]:
+                            result_from_one_pdf.append({'keyword original': keyword_original,
+                                                        'keyword': keyword,
+                                                        'document name': pdf_path.name,
+                                                        'page number': page_num,
+                                                        'context': text[max(0, interval.left - 10):
+                                                                        min(len_text, interval.right + 10)]})
         if result_from_one_pdf:
             self.log(f'Done pdf search: {pdf_path.name}')
-            result_from_one_pdf: pd.DataFrame = pd.DataFrame(result_from_one_pdf) \
-                .sort_values(by=['keyword original', 'keyword', 'page number', 'start'])
-            #    .sort_values(by=['keyword original', 'keyword', 'page number', 'context'])
-
-            return result_from_one_pdf
+            return pd.DataFrame(result_from_one_pdf).sort_values(by=['keyword original', 'keyword', 'page number'])
         return None
 
     def search_in_pdf_fast(self, pdf_path: Path) -> Union[pd.DataFrame, None]:
@@ -190,11 +196,11 @@ class FuzzySearcher:
         :param pdf_path: path to searchable pdf file
         :return: dataframe with columns: keyword original, keyword,  document name, page num
         """
-        result_from_one_pdf = []
+        result_from_one_pdf: List[Dict] = []
         # noinspection PyUnresolvedReferences
         with fitz.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf):
-                text = page.getText('text')
+                text: str = page.getText('text')
                 if not text:
                     continue
 

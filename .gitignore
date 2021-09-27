@@ -2,3 +2,6 @@
 /.mypy_cache/
 /.idea/
 /src/trash.py
+/log.txt
+/src/interval_problem.ipynb
+/inp/docx/
