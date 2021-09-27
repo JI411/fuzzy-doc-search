@@ -1,16 +1,20 @@
-Проект для распознавания (OCR) pdf документов, поиска ключевых фраз в xlsx и текстовых pdf.
+# fuzzy-doc-search: Проект для распознавания (OCR) pdf документов, поиска ключевых фраз в xlsx и текстовых pdf.
+
 Для решения задачи OCR используется класс Recognizer (из recognize.py). Для поиске - FuzzySearcher (из search.py).
 Для запуска из конфига используетс файл fuzzy_doc_search.py, конфиг лежит в папке inp_path, в example_config.yaml есть пояснения к каждому параметру в конфиге.
-
+____
 Для использования OCR необходимо указать путь до тессеракта в 20-21 строчках fuzzy_doc_search.py. Для удобного встраивания в другие модули все методы снабжены описаниями.
 
 Что можно спокойно менять:
-* Другая система для OCR
-* Функция препроцессинга для текста и ключевых фраз (передаётся в FuzzySearcher)
-* Запуск не из конфига, а как удобно
-
+- Другая система для OCR
+- Функция препроцессинга для текста и ключевых фраз (передаётся в FuzzySearcher)
+- Запуск не из конфига, а как удобно
+____
 
 Использование (весь код есть в src/quick_start.py):
+
+```python
+
 
 # импорты
 from pathlib import Path
@@ -64,4 +68,6 @@ with Pool(processes=4) as pool:
                                                                 searchable_pdf_dir.glob('*.pdf')))
     result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
                                                                      searchable_pdf_dir.glob('*.pdf')))
+                                                                     
+```
 
