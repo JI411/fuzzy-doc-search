@@ -66,7 +66,7 @@ recognizer: Recognizer = Recognizer(dpi=600,
                                     # путь до папки с текстовыми pdf
                                     preprocess_config={'resize': False, 'adaptiveThreshold': False,
                                                        'bilateralFilter': False})
-# какие преобразования над изображениями из Recognizer.image_preprocess применять
+                                    # какие преобразования над изображениями из Recognizer.image_preprocess применять
 
 # multiprocessing recognize and search
 with Pool(processes=4) as pool:
