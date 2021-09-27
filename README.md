@@ -31,9 +31,11 @@ from search import FuzzySearcher, dummy_preprocess
 from recognize import Recognizer
 
 
-# указываем пути
+# для тессеракта
 system("export TESSDATA_PREFIX='/usr/share/tesseract-ocr/4.00/tessdata'")
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+
+# указываем пути
 project_dir = Path.cwd().parent
 inp_dir = project_dir / 'inp'
 xlsx_dir = inp_dir / 'xlsx'
@@ -42,6 +44,19 @@ searchable_pdf_dir = inp_dir / 'searchable pdf'
 out_dir = project_dir / 'out' / str(datetime.datetime.now())
 log_path = out_dir / 'log.txt'
 output_path = out_dir / 'output.xlsx'
+
+out_dir.mkdir(parents=True, exist_ok=True)
+
+with open(inp_dir / "config.yaml", "r", encoding='utf-8') as f:
+    config = yaml.safe_load(f)
+
+with open(log_path, 'a', encoding='utf-8') as file:
+    print(config, file=file, flush=True)
+
+with open(inp_dir / 'keywords.txt', encoding='utf-8') as f:
+    keywords_not_preprocessed = [line.replace('\n', ' ') for line in f.readlines()]
+    keywords_not_preprocessed = list(filter(lambda x: x not in (' ', ''), keywords_not_preprocessed))
+
 
 # define FuzzySearcher and Recognizer
 fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.token_sort_ratio,        
