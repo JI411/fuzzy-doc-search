@@ -26,7 +26,7 @@ project_dir: Path = Path.cwd().parent
 inp_dir: Path = project_dir / 'inp'
 xlsx_dir: Path = inp_dir / 'xlsx'
 scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
-searchable_pdf_dir: Path = inp_dir / 'searchable pdf'
+searchable_pdf_dir: Path = inp_dir / 'searchable_pdf'
 out_dir: Path = project_dir / 'out' / str(datetime.datetime.now())
 log_path: Path = out_dir / 'log.txt'
 output_path: Path = out_dir / 'output.xlsx'
@@ -62,7 +62,7 @@ recognizer: Recognizer = Recognizer(dpi=600,
                                     # путь для файла с логами
                                     lang='ru',
                                     # язык из доступных для тессеракта
-                                    searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',
+                                    searchable_pdf_dir=project_dir / 'inp' / 'searchable_pdf',
                                     # путь до папки с текстовыми pdf
                                     preprocess_config={'resize': False,             # какие преобразования из
                                                        'adaptiveThreshold': False,  # Recognizer.image_preprocess

@@ -27,9 +27,9 @@ def dummy_preprocess(text: str) -> str:
     """
     replace \n, \t, needless spaces and symbols
     """
-    text = re.sub(r"[^А-Яа-я0-9()\s,]", " ", text)
-    text = text.replace('\t', ' ').replace('\n', ' ').strip().lower()
-    # text = re.sub(r"[^A-Za-z0-9()\s,]", " ", text)
+    text = text.lower().replace('ё', 'е')
+    text = re.sub(r"[^a-zа-я0-9()\s,]", "", text)
+    text = text.replace('\t', ' ').replace('\n', ' ').strip()
     return text
 
 
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     project_dir = Path.cwd().parent
     inp_dir = project_dir / 'inp'
     xlsx_dir = inp_dir / 'xlsx'
-    searchable_pdf_dir = inp_dir / 'searchable pdf'
+    searchable_pdf_dir = inp_dir / 'searchable_pdf'
 
     with open(inp_dir / 'keywords.txt', encoding='utf-8') as f:
         keywords_not_preprocessed = [line.replace('\n', ' ') for line in f.readlines()]
