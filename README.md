@@ -44,17 +44,27 @@ log_path = out_dir / 'log.txt'
 output_path = out_dir / 'output.xlsx'
 
 # define FuzzySearcher and Recognizer
-fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.token_sort_ratio,        # функция, определяющая близость фраз с значениями в (0, 100)
-                                     partial_ratio=fuzz.partial_ratio,   # как ratio, но для функции search_in_pdf_fast
-                                     conf_threshold_percent=80,          # порог уверенности, если ratio выше погрога, то фраза считается найденной
-                                     preprocess=dummy_preprocess,        # функция для препроцессинга
-                                     keywords=keywords_not_preprocessed, # список с ключевыми словами
-                                     log_path=project_dir / 'log.txt')   # путь для файла с логами
+fuzzy: FuzzySearcher = FuzzySearcher(ratio=fuzz.token_sort_ratio,        
+                                     # функция, определяющая близость фраз с значениями в (0, 100)
+                                     partial_ratio=fuzz.partial_ratio,
+                                     # как ratio, но для функции search_in_pdf_fast
+                                     conf_threshold_percent=80,
+                                     # порог уверенности, если ratio выше погрога, то фраза считается найденной
+                                     preprocess=dummy_preprocess,
+                                     # функция для препроцессинга
+                                     keywords=keywords_not_preprocessed,
+                                     # список с ключевыми словами
+                                     log_path=project_dir / 'log.txt')
+                                     # путь для файла с логами
 
-recognizer: Recognizer = Recognizer(dpi=600,  # dots per inch, численная мера качества фото при распознавании, 300-600 рекомендуется
-                                    log_path=project_dir / 'log.txt',  # путь для файла с логами
-                                    lang='ru',                         # язык из доступных для тессеракта
-                                    searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',  # путь до папки с текстовыми pdf
+recognizer: Recognizer = Recognizer(dpi=600,
+                                    # dots per inch, численная мера качества фото при распознавании, 300-600 рекомендуется
+                                    log_path=project_dir / 'log.txt',
+                                    # путь для файла с логами
+                                    lang='ru',
+                                    # язык из доступных для тессеракта
+                                    searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',
+                                    # путь до папки с текстовыми pdf
                                     preprocess_config={'resize': False, 'adaptiveThreshold': False, 'bilateralFilter': False})
                                     # какие преобразования над изображениями из Recognizer.image_preprocess применять
 
