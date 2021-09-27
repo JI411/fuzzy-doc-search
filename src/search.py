@@ -13,13 +13,7 @@ import datetime
 import regex as re
 import pandas as pd
 import fitz
-# import docx2txt
-
 from rapidfuzz import fuzz
-
-
-# import swifter
-# print(swifter.__version__)
 
 
 def dummy_ratio(first_text: str, second_text: str) -> float:

@@ -23,7 +23,6 @@ pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 project_dir = Path.cwd().parent
 inp_dir = project_dir / 'inp'
 xlsx_dir = inp_dir / 'xlsx'
-docx_dir = inp_dir / 'docx'
 scanned_pdf_dir = inp_dir / 'scanned pdf'
 searchable_pdf_dir = inp_dir / 'searchable pdf'
 out_dir = project_dir / 'out' / str(datetime.datetime.now())
