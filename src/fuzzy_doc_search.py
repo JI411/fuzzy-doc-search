@@ -73,7 +73,7 @@ if __name__ == '__main__':
                                                                          xlsx_dir.glob('*.xlsx')))
             result_xlsx.to_excel(writer, 'xlsx', index=False)
 
-            if config.get('fast search in pdf', False):
+            if config.get('fast_search_in_pdf', False):
                 result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
                                                                                  searchable_pdf_dir.glob('*.pdf')))
                 result_pdf_fast.to_excel(writer, 'pdf_fast', index=False)
