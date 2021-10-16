@@ -1,0 +1,7 @@
+conf_threshold_percent: 80
+dpi: 600
+lang: ru
+preprocess_image: true
+recognize: false
+search: true
+word_order: true

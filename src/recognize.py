@@ -86,8 +86,9 @@ class Recognizer:
     def scanned2searchable(self, pdf_path: Path) -> None:
         """
         Use pdf2image and tesseract to convert scanned_pdf to searchable
+
         :param pdf_path: path to one pdf file
-        :return: None, pdf save to searchable pdf dir
+        :return: None, pdf save to searchable_pdf dir
         """
         with tempfile.TemporaryDirectory(prefix=pdf_path.name) as tmp:
             self.log(f'Start pdf recognition: {pdf_path.name}')
@@ -95,7 +96,7 @@ class Recognizer:
             images: List[Image] = pdf2image.convert_from_path(pdf_path, output_folder=tmp, dpi=self.dpi)
             for page_num, img in enumerate(images):
                 if self.preprocess_config:
-                    img: np.array = self.image_preprocess(image=img, config=self.preprocess_config)
+                    img: np.ndarray = self.image_preprocess(image=img, config=self.preprocess_config)
                 try:
                     page = pytesseract.image_to_pdf_or_hocr(img, lang=self.lang, config='--psm 6')
                     with fitz.open('pdf', page) as page:
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     scanned_pdf_dir = project_dir / 'inp' / 'scanned_pdf'
 
     recognizer = Recognizer(dpi=600, log_path=project_dir / 'log.txt', lang='ru',
-                            searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',
+                            searchable_pdf_dir=project_dir / 'inp' / 'searchable_pdf',
                             preprocess_config={'resize': False, 'adaptiveThreshold': False, 'bilateralFilter': False})
 
     with Pool(processes=4) as pool:

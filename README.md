@@ -3,7 +3,7 @@ ____
 Для OCR используется класс Recognizer (из recognize.py). Для поиска - FuzzySearcher (из search.py).
 Запуска из конфига идёт через fuzzy_doc_search.py, конфиг лежит в папке inp, в example_config.yaml есть пояснения к каждому параметру в конфиге.
 
-При использовании OCR необходимо указать путь до тессеракта в fuzzy_doc_search.py, пример в коде ниже. Кроме установки библиотек из requirements.txt может потребоваться догрузить языки для тессеракта, сейчас препроцессинг и тессеракт рассчитаны на русский.
+При использовании OCR необходимо указать путь до тессеракта в fuzzy_doc_search.py в виде "pytesseract.pytesseract.tesseract_cmd = your_path", пример в коде ниже. Кроме установки библиотек из requirements.txt может потребоваться догрузить языки для тессеракта, сейчас препроцессинг и тессеракт рассчитаны на русский.
 
 Пример выходного файла можно увидеть в папке out. Там сохраняется папка с меткой времени, в неё складывается конфиг (config.yaml), лог обработки (log.txt) и результат (output.xlsx). Результат это многостраничный эксель документ, на первой странице результаты поиска в xlsx, на второй поиска по pdf. 
 В итоговой таблице выдаётся название докумнта, номер страницы/листа, контекст. Контекста нет при использовании быстрого поиска по пдф.
@@ -38,7 +38,7 @@ project_dir = Path.cwd().parent
 inp_dir = project_dir / 'inp'
 xlsx_dir = inp_dir / 'xlsx'
 scanned_pdf_dir = inp_dir / 'scanned pdf'
-searchable_pdf_dir = inp_dir / 'searchable pdf'
+searchable_pdf_dir = inp_dir / 'searchable_pdf'
 out_dir = project_dir / 'out' / str(datetime.datetime.now())
 log_path = out_dir / 'log.txt'
 output_path = out_dir / 'output.xlsx'
@@ -76,7 +76,7 @@ recognizer: Recognizer = Recognizer(dpi=600,
                                     # путь для файла с логами
                                     lang='ru',
                                     # язык из доступных для тессеракта
-                                    searchable_pdf_dir=project_dir / 'inp' / 'searchable pdf',
+                                    searchable_pdf_dir=project_dir / 'inp' / 'searchable_pdf',
                                     # путь до папки с текстовыми pdf
                                     preprocess_config={'resize': False,
                                                        'adaptiveThreshold': False,
@@ -91,8 +91,6 @@ with Pool(processes=4) as pool:
                                                                  xlsx_dir.glob('*.xlsx')))
     result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
                                                                 searchable_pdf_dir.glob('*.pdf')))
-    result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
-                                                                     searchable_pdf_dir.glob('*.pdf')))
                                                                      
 ```
 ____

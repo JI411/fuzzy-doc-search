@@ -27,7 +27,7 @@ inp_dir: Path = project_dir / 'inp'
 xlsx_dir: Path = inp_dir / 'xlsx'
 scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
 searchable_pdf_dir: Path = inp_dir / 'searchable_pdf'
-out_dir: Path = project_dir / 'out' / str(datetime.datetime.now())
+out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.')[0]
 log_path: Path = out_dir / 'log.txt'
 output_path: Path = out_dir / 'output.xlsx'
 
@@ -72,21 +72,17 @@ recognizer: Recognizer = Recognizer(dpi=600,
 # multiprocessing recognize and search
 if __name__ == '__main__':
     with Pool(processes=4) as pool:
-        pool.map(recognizer.scanned2searchable, scanned_pdf_dir.glob('*.pdf'))
+        # pool.map(recognizer.scanned2searchable, scanned_pdf_dir.glob('*.pdf'))
 
         result_xlsx: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_xlsx,
                                                                      xlsx_dir.glob('*.xlsx')))
         result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
                                                                     searchable_pdf_dir.glob('*.pdf')))
-        result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
-                                                                         searchable_pdf_dir.glob('*.pdf')))
 
 print(f'\n{"* " * 35}\n')
 print('result xlsx')
 print(result_xlsx)
+
 print(f'\n{"* " * 35}\n')
 print('result pdf')
 print(result_pdf)
-print(f'\n{"* " * 35}\n')
-print('result pdf fast')
-print(result_pdf_fast)

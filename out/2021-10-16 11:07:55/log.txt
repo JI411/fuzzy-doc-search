@@ -1,0 +1,13 @@
+{'recognize': False, 'dpi': 600, 'lang': 'ru', 'preprocess_image': True, 'search': True, 'conf_threshold_percent': 80, 'word_order': True}
+FuzzySearcher initialization: 2021-10-16 11:07:55.890695
+Keywords: ('бжд', 'лекомцев', 'лекомцев ам')
+Done xlsx search: file_example_XLSX_100.xlsx
+Done xlsx search: file_example_XLSX_10.xlsx
+Done xlsx search: file_example_XLSX_1000.xlsx
+Done xlsx search: file_example_XLSX_5000.xlsx
+Nothing find in file-sample_150kB.pdf
+Done pdf search: bjd - 0.pdf
+Done pdf search: bjd.pdf
+Nothing find in file-example_PDF_500_kB.pdf
+Done pdf search: bjd - original.pdf
+Nothing find in sample3.pdf
