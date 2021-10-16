@@ -1,6 +1,5 @@
 conf_threshold_percent: 80
 dpi: 600
-fast_search_in_pdf: false
 lang: ru
 preprocess_image: true
 recognize: false

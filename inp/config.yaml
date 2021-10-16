@@ -4,5 +4,4 @@ lang: ru
 preprocess_image: True
 search: True
 conf_threshold_percent: 80
-fast_search_in_pdf: False
 word_order: True

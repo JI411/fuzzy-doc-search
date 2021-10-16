@@ -91,8 +91,6 @@ with Pool(processes=4) as pool:
                                                                  xlsx_dir.glob('*.xlsx')))
     result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
                                                                 searchable_pdf_dir.glob('*.pdf')))
-    result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
-                                                                     searchable_pdf_dir.glob('*.pdf')))
                                                                      
 ```
 ____

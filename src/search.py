@@ -74,8 +74,8 @@ class FuzzySearcher:
             raise ValueError('conf_threshold_percent must be float between 0 and 100')
 
         len_keywords = [len(keyword) for keyword in self.keywords['processed']]
-        self.len_keywords: Dict[str, int] = {'max': max(1, floor(min(len_keywords) * self.conf_t / 100)),
-                                             'min': ceil(max(len_keywords) * 100 / self.conf_t)}
+        self.len_keywords: Dict[str, int] = {'min': max(1, floor(min(len_keywords) * self.conf_t / 100)),
+                                             'max': ceil(max(len_keywords) * 100 / self.conf_t)}
 
         self.log(f'FuzzySearcher initialization: {str(datetime.datetime.now())}')
         self.log(f"Keywords: {self.keywords['processed']}")
@@ -134,6 +134,7 @@ class FuzzySearcher:
         if result_from_one_xlsx:
             self.log(f'Done xlsx search: {xlsx_path.name}')
             return pd.concat(result_from_one_xlsx)
+        self.log(f'Nothing find in {xlsx_path.name}')
         return None
 
     @staticmethod
@@ -211,35 +212,7 @@ class FuzzySearcher:
         if result_from_one_pdf:
             self.log(f'Done pdf search: {pdf_path.name}')
             return pd.DataFrame(result_from_one_pdf).sort_values(by=['keyword original', 'keyword', 'page number'])
-        return None
-
-    def search_in_pdf_fast(self, pdf_path: Path) -> Union[pd.DataFrame, None]:
-        """
-        Use self.partial_ratio to find keywords in file
-        Attention: don't return context, return one or zero dataframe row for every page
-
-        :param pdf_path: path to searchable_pdf file
-        :return: dataframe with columns: keyword original, keyword,  document name, page num
-        """
-        result_from_one_pdf: List[Dict] = []
-        # noinspection PyUnresolvedReferences
-        with fitz.open(pdf_path) as pdf:
-            for page_num, page in enumerate(pdf):
-                text: str = page.getText('text')
-                if not text:
-                    continue
-
-                text = self.preprocess(text)
-                for keyword_original, keyword in zip(self.keywords['original'], self.keywords['processed']):
-                    if self.partial_ratio(keyword, text) > self.conf_t:
-                        result_from_one_pdf.append({'keyword original': keyword_original,
-                                                    'keyword': keyword + ' ',
-                                                    'document name': pdf_path.name,
-                                                    'page number': page_num})
-        if result_from_one_pdf:
-            self.log(f'Done fast pdf search: {pdf_path.name}')
-            return pd.DataFrame(result_from_one_pdf).sort_values(by=['keyword original',
-                                                                     'page number']).drop_duplicates()
+        self.log(f'Nothing find in {pdf_path.name}')
         return None
 
 
@@ -275,12 +248,8 @@ if __name__ == '__main__':
                                                                      xlsx_dir.glob('*.xlsx')))
         result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
                                                                     searchable_pdf_dir.glob('*.pdf')))
-        result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf_fast,
-                                                                         searchable_pdf_dir.glob('*.pdf')))
 
     print(f'\n{"* " * 35}\n')
     print(result_xlsx)
     print(f'\n{"* " * 35}\n')
     print(result_pdf)
-    print(f'\n{"* " * 35}\n')
-    print(result_pdf_fast)

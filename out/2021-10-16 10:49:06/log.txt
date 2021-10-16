@@ -1,8 +1,0 @@
-{'recognize': False, 'dpi': 600, 'lang': 'ru', 'preprocess_image': True, 'search': True, 'conf_threshold_percent': 80, 'fast_search_in_pdf': False, 'word_order': True}
-FuzzySearcher initialization: 2021-10-16 10:49:06.510129
-Keywords: ('бжд', 'лекомцев', 'лекомцев ам')
-Done xlsx search: output.xlsx
-Done xlsx search: file_example_XLSX_100.xlsx
-Done xlsx search: file_example_XLSX_10.xlsx
-Done xlsx search: file_example_XLSX_1000.xlsx
-Done xlsx search: file_example_XLSX_5000.xlsx
