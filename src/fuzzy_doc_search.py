@@ -18,7 +18,7 @@ from search import FuzzySearcher, dummy_preprocess
 from recognize import Recognizer
 
 # setup tesseract configuration
-system("export TESSDATA_PREFIX='/usr/share/tesseract-ocr/4.00/tessdata'")
+# system("export TESSDATA_PREFIX='/usr/share/tesseract-ocr/4.00/tessdata'")
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
 project_dir: Path = Path.cwd().parent
@@ -26,7 +26,7 @@ inp_dir: Path = project_dir / 'inp'
 xlsx_dir: Path = inp_dir / 'xlsx'
 scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
 searchable_pdf_dir: Path = inp_dir / 'searchable_pdf'
-out_dir: Path = project_dir / 'out' / str(datetime.datetime.now())
+out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.')[0]
 log_path: Path = out_dir / 'log.txt'
 output_path: Path = out_dir / 'output.xlsx'
 

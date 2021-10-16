@@ -27,7 +27,7 @@ inp_dir: Path = project_dir / 'inp'
 xlsx_dir: Path = inp_dir / 'xlsx'
 scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
 searchable_pdf_dir: Path = inp_dir / 'searchable_pdf'
-out_dir: Path = project_dir / 'out' / str(datetime.datetime.now())
+out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.')[0]
 log_path: Path = out_dir / 'log.txt'
 output_path: Path = out_dir / 'output.xlsx'
 
@@ -84,9 +84,11 @@ if __name__ == '__main__':
 print(f'\n{"* " * 35}\n')
 print('result xlsx')
 print(result_xlsx)
+
 print(f'\n{"* " * 35}\n')
 print('result pdf')
 print(result_pdf)
+
 print(f'\n{"* " * 35}\n')
 print('result pdf fast')
 print(result_pdf_fast)

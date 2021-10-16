@@ -1,5 +1,5 @@
 """
-Class for fuzzy string search in searchable pdf, xlsx
+Class for fuzzy string search in searchable_pdf, xlsx
 """
 # pylint: disable=line-too-long
 
@@ -7,7 +7,7 @@ from pathlib import Path
 from multiprocessing import Pool
 
 from math import ceil, floor
-from typing import List, Callable, Union, Generator, Dict
+from typing import Callable, Union, Generator, Collection, List, Dict, Tuple
 import datetime
 
 import regex as re
@@ -55,13 +55,15 @@ class FuzzySearcher:
         self.log_path = log_path
         self.preprocess = preprocess
 
-        self.keywords = {'original': tuple(keywords),
-                         'processed': tuple(filter(lambda x: x != '', (preprocess(i) for i in keywords)))}
+        self.keywords: Dict[str, Collection[str]] = {
+            'original': tuple(keywords),
+            'processed': tuple(filter(lambda x: x != '', (preprocess(i) for i in keywords)))
+        }
 
         if not self.keywords['processed']:
             self.log("ValueError 'Empty keywords list after preprocessing'")
             raise ValueError('Empty keywords list after preprocessing')
-        elif len(self.keywords['processed']) != len(self.keywords['original']):
+        if len(self.keywords['processed']) != len(self.keywords['original']):
             self.log("ValueError 'Some keywords remove after preprocessing'")
             self.log(f"keywords after preprocessing: {self.keywords['processed']}")
             raise ValueError('Some keywords remove after preprocessing')
@@ -72,8 +74,8 @@ class FuzzySearcher:
             raise ValueError('conf_threshold_percent must be float between 0 and 100')
 
         len_keywords = [len(keyword) for keyword in self.keywords['processed']]
-        self.keywords['min_len_matched_text']: int = max(1, floor(min(len_keywords) * self.conf_t / 100))
-        self.keywords['max_len_matched_text']: int = ceil(max(len_keywords) * 100 / self.conf_t)
+        self.len_keywords: Dict[str, int] = {'max': max(1, floor(min(len_keywords) * self.conf_t / 100)),
+                                             'min': ceil(max(len_keywords) * 100 / self.conf_t)}
 
         self.log(f'FuzzySearcher initialization: {str(datetime.datetime.now())}')
         self.log(f"Keywords: {self.keywords['processed']}")
@@ -111,7 +113,7 @@ class FuzzySearcher:
         for sheet_name, dataframe in pd.read_excel(xlsx_path, sheet_name=None, header=None).items():
             if dataframe.empty:
                 continue
-            dataframe: pd.DataFrame = dataframe.fillna('').astype(str)
+            dataframe = dataframe.fillna('').astype(str)
             for keyword_original, keyword in zip(self.keywords["original"], self.keywords["processed"]):
                 save_if_match: Callable[[str], str] = lambda x, k=keyword: \
                     x if self.partial_ratio(k, self.preprocess(x)) > self.conf_t else ''
@@ -134,14 +136,46 @@ class FuzzySearcher:
             return pd.concat(result_from_one_xlsx)
         return None
 
+    @staticmethod
+    def update_result_from_one_page_pdf(new_interval: pd.Interval,
+                                        result_from_one_page: Dict[str, List[pd.Interval]], keyword: str):
+        """
+        Add new_interval to list of chunks with keyword if interval not interception with another
+        Else filter list of chunks - combine it.
+        Example of combine: [(1, 5), (2, 4), (3, 7), (7, 10)] ---> [(1, 7), (7, 10)]
+
+        :param new_interval: pd.Interval - chunk position in text
+        :param result_from_one_page: keys == keywords, values == list of keys position in text
+        :param keyword:  new keyword to add
+        :return: updated result_from_one_page
+        """
+        if keyword not in result_from_one_page.keys():
+            result_from_one_page[keyword] = [new_interval]
+        else:
+            add_new_interval = True
+            for i, interval in enumerate(result_from_one_page[keyword]):
+                if interval.overlaps(new_interval):
+                    result_from_one_page[keyword][i] = pd.Interval(
+                        min(interval.left, new_interval.left),
+                        max(interval.right, new_interval.right))
+                    add_new_interval = False
+            if add_new_interval:
+                result_from_one_page[keyword].append(new_interval)
+        return result_from_one_page
+
     def search_in_pdf(self, pdf_path: Path) -> Union[pd.DataFrame, None]:
         """
         Use self.ratio to find keywords in file
 
-        :param pdf_path: path to searchable pdf file
+        Split text from every page to chunks, add chunk to result if ratio(chunk, keyword) > conf_t,
+        filter list of chunks - if we have nonempty interception of intervals (start and end exclude), we combine it.
+        Example of combine: [(1, 5), (2, 4), (3, 7), (7, 10)] ---> [(1, 7), (7, 10)]
+
+        :param pdf_path: path to searchable_pdf file
         :return: dataframe with columns: keyword original, keyword,  document name, page number, context
         """
         result_from_one_pdf: List[Dict] = []
+        # noinspection PyUnresolvedReferences
         with fitz.open(pdf_path) as pdf:
             for page_num, page in enumerate(pdf):
                 result_from_one_page: Dict[str, List[pd.Interval]] = {}
@@ -153,28 +187,20 @@ class FuzzySearcher:
 
                 text = self.preprocess(text)
                 len_text = len(text)
-                for len_chunk in range(self.keywords['min_len_matched_text'], self.keywords['max_len_matched_text'] + 1):
+                for len_chunk in range(self.len_keywords['min'], self.len_keywords['max'] + 1):
                     for start, end in ((i, i + len_chunk) for i in range(0, len_text, len_chunk)):
                         chunk = text[start: end]
                         for keyword in self.keywords['processed']:
                             if self.ratio(keyword, chunk) > self.conf_t:
 
-                                new_interval = pd.Interval(left=start, right=end)  # closed='both'
-                                if keyword not in result_from_one_page.keys():
-                                    result_from_one_page[keyword] = [new_interval]
-                                else:
-                                    add_new_interval = True
-                                    for i, interval in enumerate(result_from_one_page[keyword]):
-                                        if interval.overlaps(new_interval):
-                                            result_from_one_page[keyword][i] = pd.Interval(
-                                                min(interval.left, new_interval.left),
-                                                max(interval.right, new_interval.right))
-                                            add_new_interval = False
-                                    if add_new_interval:
-                                        result_from_one_page[keyword].append(new_interval)
+                                result_from_one_page = self.update_result_from_one_page_pdf(
+                                    new_interval=pd.Interval(left=start, right=end),
+                                    result_from_one_page=result_from_one_page,
+                                    keyword=keyword)
 
                 for keyword_original, keyword in zip(self.keywords['original'], self.keywords['processed']):
                     if keyword in result_from_one_page.keys():
+                        # noinspection PyTypeChecker
                         for interval in result_from_one_page[keyword]:
                             result_from_one_pdf.append({'keyword original': keyword_original,
                                                         'keyword': keyword,
@@ -192,7 +218,7 @@ class FuzzySearcher:
         Use self.partial_ratio to find keywords in file
         Attention: don't return context, return one or zero dataframe row for every page
 
-        :param pdf_path: path to searchable pdf file
+        :param pdf_path: path to searchable_pdf file
         :return: dataframe with columns: keyword original, keyword,  document name, page num
         """
         result_from_one_pdf: List[Dict] = []
