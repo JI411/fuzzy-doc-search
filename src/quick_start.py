@@ -27,7 +27,7 @@ inp_dir: Path = project_dir / 'inp'
 xlsx_dir: Path = inp_dir / 'xlsx'
 scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
 searchable_pdf_dir: Path = inp_dir / 'searchable_pdf'
-out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.')[0]
+out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.', maxsplit=1)[0]
 log_path: Path = out_dir / 'log.txt'
 output_path: Path = out_dir / 'output.xlsx'
 

@@ -6,7 +6,6 @@ Start script from user config from inp_path
 from pathlib import Path
 from multiprocessing import Pool
 from typing import Dict, Union, List
-# from os import system
 import datetime
 import yaml
 import pandas as pd
@@ -18,6 +17,7 @@ from search import FuzzySearcher, dummy_preprocess
 from recognize import Recognizer
 
 # setup tesseract configuration
+# from os import system
 # system("export TESSDATA_PREFIX='/usr/share/tesseract-ocr/4.00/tessdata'")
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
@@ -26,7 +26,7 @@ inp_dir: Path = project_dir / 'inp'
 xlsx_dir: Path = inp_dir / 'xlsx'
 scanned_pdf_dir: Path = inp_dir / 'scanned_pdf'
 searchable_pdf_dir: Path = inp_dir / 'searchable_pdf'
-out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.')[0]
+out_dir: Path = project_dir / 'out' / str(datetime.datetime.now()).split('.', maxsplit=1)[0]
 log_path: Path = out_dir / 'log.txt'
 output_path: Path = out_dir / 'output.xlsx'
 
@@ -72,8 +72,6 @@ if __name__ == '__main__':
             result_xlsx: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_xlsx,
                                                                          xlsx_dir.glob('*.xlsx')))
             result_xlsx.to_excel(writer, 'xlsx', index=False)
-
-            print(list(searchable_pdf_dir.glob('*.pdf')))
 
             result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
                                                                             searchable_pdf_dir.glob('*.pdf')))

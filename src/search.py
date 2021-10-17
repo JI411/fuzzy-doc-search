@@ -7,7 +7,7 @@ from pathlib import Path
 from multiprocessing import Pool
 
 from math import ceil, floor
-from typing import Callable, Union, Generator, Collection, List, Dict, Tuple
+from typing import Callable, Union, Generator, Collection, List, Dict
 import datetime
 
 import regex as re
@@ -38,9 +38,13 @@ class FuzzySearcher:
     Basic class for a search in docs
     """
 
-    def __init__(self, ratio: Callable[[str, str], float], partial_ratio: Callable[[str, str], float],
-                 conf_threshold_percent: Union[int, float], log_path: Path,
-                 preprocess: Callable[[str], str], keywords: List[str]) -> None:
+    def __init__(self,
+                 conf_threshold_percent: Union[int, float],
+                 log_path: Path,
+                 keywords: List[str],
+                 preprocess: Callable[[str], str],
+                 ratio: Callable[[str, str], float] = None,
+                 partial_ratio: Callable[[str, str], float] = None) -> None:
         """
         :param ratio: ratio func, return ratio of two string in range 0-100
         :param partial_ratio: like ratio, but can be used to find partial ratio
@@ -49,17 +53,30 @@ class FuzzySearcher:
         :param keywords: keywords to find in docs
         """
         # pylint: disable=too-many-arguments
-
+        # because it is necessary to define all params in __init__
+        # we can contain some in config, but this variant more clear
         self.ratio = ratio
         self.partial_ratio = partial_ratio
         self.log_path = log_path
         self.preprocess = preprocess
-
         self.keywords: Dict[str, Collection[str]] = {
             'original': tuple(keywords),
             'processed': tuple(filter(lambda x: x != '', (preprocess(i) for i in keywords)))
         }
+        self.conf_t: float = float(conf_threshold_percent)
 
+        self.check_keywords()
+        self.check_conf_t()
+
+        len_keywords = [len(keyword) for keyword in self.keywords['processed']]
+        self.len_keywords: Dict[str, int] = {'min': max(1, floor(min(len_keywords) * self.conf_t / 100)),
+                                             'max': ceil(max(len_keywords) * 100 / self.conf_t)}
+
+        self.log(f'FuzzySearcher initialization: {str(datetime.datetime.now())}')
+        self.log(f"Keywords: {self.keywords['processed']}")
+
+    def check_keywords(self) -> None:
+        """Check list of keywords non-empty and we don't lost any words in preprocessing """
         if not self.keywords['processed']:
             self.log("ValueError 'Empty keywords list after preprocessing'")
             raise ValueError('Empty keywords list after preprocessing')
@@ -68,17 +85,10 @@ class FuzzySearcher:
             self.log(f"keywords after preprocessing: {self.keywords['processed']}")
             raise ValueError('Some keywords remove after preprocessing')
 
-        if 0 < conf_threshold_percent <= 100:
-            self.conf_t: float = float(conf_threshold_percent)
-        else:
+    def check_conf_t(self) -> None:
+        """Check conf_threshold_percent in range 0-100"""
+        if self.conf_t < 0 or self.conf_t >= 100:
             raise ValueError('conf_threshold_percent must be float between 0 and 100')
-
-        len_keywords = [len(keyword) for keyword in self.keywords['processed']]
-        self.len_keywords: Dict[str, int] = {'min': max(1, floor(min(len_keywords) * self.conf_t / 100)),
-                                             'max': ceil(max(len_keywords) * 100 / self.conf_t)}
-
-        self.log(f'FuzzySearcher initialization: {str(datetime.datetime.now())}')
-        self.log(f"Keywords: {self.keywords['processed']}")
 
     @staticmethod
     def try_concat_result(gen: Union[List[pd.DataFrame],
@@ -95,7 +105,7 @@ class FuzzySearcher:
 
     def log(self, *args, **kwargs) -> None:
         """
-        Write log to self.log file
+        Write log to self.log file and print in console
         """
         print(*args, **kwargs)
         with open(self.log_path, 'a', encoding='utf-8') as file:
@@ -109,6 +119,9 @@ class FuzzySearcher:
         :return: dataframe with columns:
                  keyword original, keyword,  document name, sheet name, string #, context
         """
+        if self.partial_ratio is None:
+            self.log("Define partial_ratio function to find in xlsx")
+            raise Exception("Define partial_ratio function to find in xlsx")
         result_from_one_xlsx: List[pd.DataFrame] = []
         for sheet_name, dataframe in pd.read_excel(xlsx_path, sheet_name=None, header=None).items():
             if dataframe.empty:
@@ -117,8 +130,6 @@ class FuzzySearcher:
             for keyword_original, keyword in zip(self.keywords["original"], self.keywords["processed"]):
                 save_if_match: Callable[[str], str] = lambda x, k=keyword: \
                     x if self.partial_ratio(k, self.preprocess(x)) > self.conf_t else ''
-                # sub_df: pd.DataFrame = dataframe.swifter.progress_bar(False).allow_dask_on_strings(True)
-                # sub_df = sub_df.applymap(save_if_match)
                 sub_df: pd.DataFrame = dataframe.applymap(save_if_match)
                 sub_df = sub_df.loc[sub_df.iloc[:, 0] == ''].drop_duplicates(keep=False)
                 sub_df = sub_df.apply(pd.Series.unique, axis=1)
@@ -164,6 +175,33 @@ class FuzzySearcher:
                 result_from_one_page[keyword].append(new_interval)
         return result_from_one_page
 
+    def result_from_one_page_2_one_pdf(self, pdf_path: Path, page_num: int, text: str,
+                                       result_from_one_page: Dict[str, List[pd.Interval]],
+                                       result_from_one_pdf: List[Dict]):
+        """
+        Update result_from_one_pdf in search_in_pdf method.
+
+        :param pdf_path: path to pdf document containing page, that we are processing
+        :param page_num: pdf page parameter, start from zero
+        :param text: text from page, that we are processing
+        :param result_from_one_page: dict that containing keys == keywords, values == list of keys position in text
+        :param result_from_one_pdf: list with dict result_from_one_page for every page in pdf
+        :return: updated result_from_one_pdf
+        """
+        # pylint: disable=too-many-arguments
+        # because it is necessary to write together the page number, path to pdf, context, etc.
+        len_text = len(text)
+        for keyword_original, keyword in zip(self.keywords['original'], self.keywords['processed']):
+            if keyword in result_from_one_page.keys():
+                for interval in result_from_one_page[keyword]:
+                    result_from_one_pdf.append({'keyword original': keyword_original,
+                                                'keyword': keyword,
+                                                'document name': pdf_path.name,
+                                                'page number': page_num + 1,
+                                                'context': text[max(0, interval.left - 10):
+                                                                min(len_text, interval.right + 10)]})
+        return result_from_one_pdf
+
     def search_in_pdf(self, pdf_path: Path) -> Union[pd.DataFrame, None]:
         """
         Use self.ratio to find keywords in file
@@ -175,6 +213,9 @@ class FuzzySearcher:
         :param pdf_path: path to searchable_pdf file
         :return: dataframe with columns: keyword original, keyword,  document name, page number, context
         """
+        if self.ratio is None:
+            self.log("Define ratio function to find in pdf")
+            raise Exception("Define ratio function to find in pdf")
         result_from_one_pdf: List[Dict] = []
         # noinspection PyUnresolvedReferences
         with fitz.open(pdf_path) as pdf:
@@ -199,16 +240,12 @@ class FuzzySearcher:
                                     result_from_one_page=result_from_one_page,
                                     keyword=keyword)
 
-                for keyword_original, keyword in zip(self.keywords['original'], self.keywords['processed']):
-                    if keyword in result_from_one_page.keys():
-                        # noinspection PyTypeChecker
-                        for interval in result_from_one_page[keyword]:
-                            result_from_one_pdf.append({'keyword original': keyword_original,
-                                                        'keyword': keyword,
-                                                        'document name': pdf_path.name,
-                                                        'page number': page_num,
-                                                        'context': text[max(0, interval.left - 10):
-                                                                        min(len_text, interval.right + 10)]})
+                result_from_one_pdf = self.result_from_one_page_2_one_pdf(pdf_path=pdf_path,
+                                                                          page_num=page_num,
+                                                                          text=text,
+                                                                          result_from_one_page=result_from_one_page,
+                                                                          result_from_one_pdf=result_from_one_pdf)
+
         if result_from_one_pdf:
             self.log(f'Done pdf search: {pdf_path.name}')
             return pd.DataFrame(result_from_one_pdf).sort_values(by=['keyword original', 'keyword', 'page number'])
@@ -239,9 +276,6 @@ if __name__ == '__main__':
     #
     # result_pdf: pd.DataFrame = fuzzy.try_concat_result((fuzzy.search_in_pdf(pdf_path)
     #                                                     for pdf_path in searchable_pdf_dir.glob('*.pdf')))
-    #
-    # result_pdf_fast: pd.DataFrame = fuzzy.try_concat_result((fuzzy.search_in_pdf_fast(pdf_path)
-    #                                                          for pdf_path in searchable_pdf_dir.glob('*.pdf')))
 
     with Pool(processes=4) as pool:
         result_xlsx: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_xlsx,
