@@ -32,7 +32,8 @@ class Recognizer:
         :param lang: lang for tesseract-osr
         """
         # pylint: disable=too-many-arguments
-
+        # because it is necessary to define all params in __init__
+        # we can contain some in config, but this variant more clear
         self.dpi = int(dpi)
         self.preprocess_config = preprocess_config
         self.lang = lang
@@ -47,23 +48,6 @@ class Recognizer:
         print(*args, **kwargs)
         with open(self.log_path, 'a', encoding='utf-8') as file:
             print(*args, **kwargs, file=file, flush=True)
-
-    # @staticmethod
-    # def get_text_percentage_page(pdf_page: fitz.Page) -> float:
-    #     """
-    #     Calculate the percentage of document that is covered by (searchable) text.
-    #     https://stackoverflow.com/questions/55704218/how-to-check-if-pdf-is-scanned-image-or-contains-text
-    #
-    #     If the returned percentage of text is very low, the document is
-    #     most likely a scanned PDF
-    #     """
-    #     total_page_area = abs(pdf_page.rect)
-    #     total_text_area = 0.0
-    #
-    #     for b in pdf_page.get_text(opt="blocks"):
-    #         r = fitz.Rect(b[:4])  # rectangle where block text appears
-    #         total_text_area += abs(r)
-    #     return total_text_area / total_page_area
 
     @staticmethod
     def image_preprocess(image: Image, config: Dict) -> Any:
@@ -96,11 +80,14 @@ class Recognizer:
             images: List[Image] = pdf2image.convert_from_path(pdf_path, output_folder=tmp, dpi=self.dpi)
             for page_num, img in enumerate(images):
                 if self.preprocess_config:
-                    img: np.ndarray = self.image_preprocess(image=img, config=self.preprocess_config)
+                    img = self.image_preprocess(image=img, config=self.preprocess_config)
                 try:
                     page = pytesseract.image_to_pdf_or_hocr(img, lang=self.lang, config='--psm 6')
+                    # noinspection PyUnresolvedReferences
                     with fitz.open('pdf', page) as page:
                         pdf.insert_pdf(page)
+                # pylint: disable=broad-except
+                # because it was created as a tool for people who can't write code - it should work anyway
                 except Exception as ex:
                     self.log(f'{ex} on page {page_num} in pdf file {pdf_path.name}')
             self.log(f'Done pdf recognition: {pdf_path.name}')
