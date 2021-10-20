@@ -13,6 +13,7 @@ import datetime
 import regex as re
 import pandas as pd
 import fitz
+from numpy import nan
 from rapidfuzz import fuzz
 
 
@@ -48,7 +49,7 @@ class FuzzySearcher:
         """
         :param ratio: ratio func, return ratio of two string in range 0-100
         :param partial_ratio: like ratio, but can be used to find partial ratio
-        :param conf_threshold_percent:  match if ratio > conf, must be in range 0-100
+        :param conf_threshold_percent:  match if ratio > conf, must be integer in range 1-100
         :param preprocess: function to preprocess texts from docs and keywords
         :param keywords: keywords to find in docs
         """
@@ -63,7 +64,7 @@ class FuzzySearcher:
             'original': tuple(keywords),
             'processed': tuple(filter(lambda x: x != '', (preprocess(i) for i in keywords)))
         }
-        self.conf_t: float = float(conf_threshold_percent)
+        self.conf_t: int = int(conf_threshold_percent)
 
         self.check_keywords()
         self.check_conf_t()
@@ -128,23 +129,34 @@ class FuzzySearcher:
                 continue
             dataframe = dataframe.fillna('').astype(str)
             for keyword_original, keyword in zip(self.keywords["original"], self.keywords["processed"]):
-                save_if_match: Callable[[str], str] = lambda x, k=keyword: \
-                    x if self.partial_ratio(k, self.preprocess(x)) > self.conf_t else ''
+                if self.conf_t == 100:
+                    save_if_match: Callable[[str], str] = lambda x, k=keyword: \
+                        x if k in self.preprocess(x) else nan
+                else:
+                    save_if_match: Callable[[str], str] = lambda x, k=keyword: \
+                        x if self.partial_ratio(k, self.preprocess(x)) > self.conf_t else nan
+
                 sub_df: pd.DataFrame = dataframe.applymap(save_if_match)
-                sub_df = sub_df.loc[sub_df.iloc[:, 0] == ''].drop_duplicates(keep=False)
-                sub_df = sub_df.apply(pd.Series.unique, axis=1)
-                sub_df = sub_df.apply(lambda unique_matches: [match for match in unique_matches if match])
+                sub_df = sub_df.dropna(how='all').astype(str)
+                if sub_df.empty:
+                    continue
+                sub_df = sub_df.apply(lambda row: row.str.strip().to_numpy().flatten(), axis=1)
+                sub_df = sub_df.map(lambda row_as_array: [x for x in row_as_array if x != 'nan'])
+
                 sub_df = pd.DataFrame({'keyword': keyword,
                                        'keyword original': keyword_original,
                                        'string #': sub_df.index + 1,
                                        'context': sub_df})
                 sub_df['sheet name'] = sheet_name
                 sub_df['document name'] = xlsx_path.name
-                sub_df = sub_df[['keyword original', 'keyword', 'document name', 'sheet name', 'string #', 'context']]
+                sub_df = sub_df.explode('context').fillna('')
+                sub_df = sub_df[sub_df['context'] != '']
                 result_from_one_xlsx.append(sub_df)
+
         if result_from_one_xlsx:
             self.log(f'Done xlsx search: {xlsx_path.name}')
-            return pd.concat(result_from_one_xlsx)
+            columns_order = ['keyword original', 'keyword', 'document name', 'sheet name', 'string #', 'context']
+            return pd.concat(result_from_one_xlsx)[columns_order]
         self.log(f'Nothing find in {xlsx_path.name}')
         return None
 
@@ -277,7 +289,7 @@ if __name__ == '__main__':
     # result_pdf: pd.DataFrame = fuzzy.try_concat_result((fuzzy.search_in_pdf(pdf_path)
     #                                                     for pdf_path in searchable_pdf_dir.glob('*.pdf')))
 
-    with Pool(processes=4) as pool:
+    with Pool(processes=1) as pool:
         result_xlsx: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_xlsx,
                                                                      xlsx_dir.glob('*.xlsx')))
         result_pdf: pd.DataFrame = fuzzy.try_concat_result(pool.map(fuzzy.search_in_pdf,
