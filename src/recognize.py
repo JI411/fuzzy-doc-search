@@ -39,7 +39,7 @@ class Recognizer:
         self.lang = lang
         self.log_path = log_path
         self.searchable_pdf_dir = searchable_pdf_dir
-        self.log(f'Recognizer initialization: {str(datetime.datetime.now())}')
+        self.log(f'Recognizer initialization: {datetime.datetime.now()}')
 
     def log(self, *args, **kwargs) -> None:
         """
@@ -108,4 +108,4 @@ if __name__ == '__main__':
     with Pool(processes=4) as pool:
         pool.map(recognizer.scanned2searchable, scanned_pdf_dir.glob('*.pdf'))
 
-    recognizer.log(f'Recognizer finish: {str(datetime.datetime.now())}')
+    recognizer.log(f'Recognizer finish: {datetime.datetime.now()}')

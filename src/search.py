@@ -73,7 +73,7 @@ class FuzzySearcher:
         self.len_keywords: Dict[str, int] = {'min': max(1, floor(min(len_keywords) * self.conf_t / 100)),
                                              'max': ceil(max(len_keywords) * 100 / self.conf_t)}
 
-        self.log(f'FuzzySearcher initialization: {str(datetime.datetime.now())}')
+        self.log(f'FuzzySearcher initialization: {datetime.datetime.now()}')
         self.log(f"Keywords: {self.keywords['processed']}")
 
     def check_keywords(self) -> None:
@@ -173,9 +173,7 @@ class FuzzySearcher:
         :param keyword:  new keyword to add
         :return: updated result_from_one_page
         """
-        if keyword not in result_from_one_page.keys():
-            result_from_one_page[keyword] = [new_interval]
-        else:
+        if keyword in result_from_one_page:
             add_new_interval = True
             for i, interval in enumerate(result_from_one_page[keyword]):
                 if interval.overlaps(new_interval):
@@ -185,6 +183,8 @@ class FuzzySearcher:
                     add_new_interval = False
             if add_new_interval:
                 result_from_one_page[keyword].append(new_interval)
+        else:
+            result_from_one_page[keyword] = [new_interval]
         return result_from_one_page
 
     def result_from_one_page_2_one_pdf(self, pdf_path: Path, page_num: int, text: str,
@@ -204,7 +204,7 @@ class FuzzySearcher:
         # because it is necessary to write together the page number, path to pdf, context, etc.
         len_text = len(text)
         for keyword_original, keyword in zip(self.keywords['original'], self.keywords['processed']):
-            if keyword in result_from_one_page.keys():
+            if keyword in result_from_one_page:
                 for interval in result_from_one_page[keyword]:
                     result_from_one_pdf.append({'keyword original': keyword_original,
                                                 'keyword': keyword,
